@@ -1,5 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+import time
+import _locale
+_locale._getdefaultlocale = (lambda *args: ['en_US', 'utf8'])
 
 
 def choose_language():
@@ -17,8 +20,9 @@ def choose_language():
                     11. Romanian
                     12. Russian
                     13. Turkish
+                    0. All languages
                     Type the number of your language:\n'''
-    to_prompt = 'Type the number of language you want to translate to:\n'
+    to_prompt = 'Type the number of language you want to translate to or "0" to translate to all languages:\n'
     from_code = int(input(from_prompt))
     to_code = int(input(to_prompt))
     language_key = {
@@ -34,11 +38,12 @@ def choose_language():
         10: 'Portuguese',
         11: 'Romanian',
         12: 'Russian',
-        13: 'Turkish'
+        13: 'Turkish',
+        0: 'All'
     }
     from_language = language_key[from_code]
     to_language = language_key[to_code]
-    return from_language, to_language
+    return from_language, to_language, language_key
 
 
 def choose_word():
@@ -72,10 +77,10 @@ def get_content(from_lang, to_lang, user_word):
 def parse_page(page):
     soup = BeautifulSoup(page.content, 'html.parser')
     translations = soup.find_all('a', class_=lambda value: value and value.startswith("translation"))
-    translation_list = [word.get_text().strip() for word in translations]
+    translation_list = [word.get_text().strip() for word in translations if word.get_text().strip() != 'Translation']
     examples = soup.select('#examples-content span.text')
     example_list = [phrase.get_text().strip() for phrase in examples]
-    return translation_list[3:8], example_list[:10]
+    return translation_list[:5], example_list[:10]
 
 
 def print_results(translation_list, example_list, to_lang):
@@ -92,12 +97,40 @@ def print_results(translation_list, example_list, to_lang):
         print(f'{pair[0]}:\n{pair[1]}\n')
 
 
-def main():
-    from_language, to_language = choose_language()
-    word = choose_word()
+def write_all_to_file(language_list, from_lang, word):
+    with open(f'{word}.txt', 'w') as f:
+        for i in range(1, len(language_list)):
+            to_lang = language_list[i]
+            translations, examples = translate_word(from_lang, to_lang, word)
+            try:
+                f.write(f'{to_lang} Translations:\n{translations[0]}\n\n')
+                print(f'{to_lang} Translations:\n{translations[0]}\n\n')
+            except IndexError:
+                f.write(f'{to_lang} Translations:\nTranslation not available\n\n')
+                print(f'{to_lang} Translations:\nTranslation not available\n\n')
+            try:
+                f.write(f'{to_lang} Examples:\n{examples[0]}\n\n')
+                print(f'{to_lang} Examples:\n{examples[1]}\n\n')
+            except IndexError:
+                f.write(f'{to_lang} Examples:\nExample not available\n\n')
+                print(f'{to_lang} Examples:\nExample not available\n\n')
+            time.sleep(0.3)
+
+
+def translate_word(from_language, to_language, word):
     page = get_content(from_language, to_language, word)
     translations, examples = parse_page(page)
-    print_results(translations, examples, to_language)
+    return translations, examples
+
+
+def main():
+    from_language, to_language, language_key = choose_language()
+    word = choose_word()
+    if to_language == 'All':
+        write_all_to_file(language_key, from_language, word)
+    else:
+        translations, examples = translate_word(from_language, to_language, word)
+        print_results(translations, examples, to_language)
 
 
 main()
