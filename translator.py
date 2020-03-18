@@ -6,52 +6,32 @@ import _locale
 _locale._getdefaultlocale = (lambda *args: ['en_US', 'utf8'])
 
 args = sys.argv
-from_lang_input = args[1]
-to_lang_input = args[2]
-word_input = args[3]
+from_lang_input = args[1].lower()
+to_lang_input = args[2].lower()
+word_input = args[3].lower()
 
 
 def choose_language():
-    # from_prompt = ''''Hello, you're welcome to the translator. Translator supports:
-    #                 1. Arabic
-    #                 2. German
-    #                 3. English
-    #                 4. Spanish
-    #                 5. French
-    #                 6. Hebrew
-    #                 7. Japanese
-    #                 8. Dutch
-    #                 9. Polish
-    #                 10. Portuguese
-    #                 11. Romanian
-    #                 12. Russian
-    #                 13. Turkish
-    #                 0. All languages
-    #                 Type the number of your language:\n'''
-    # # to_prompt = 'Type the number of language you want to translate to or "0" to translate to all languages:\n'
-    # # from_code = int(input(from_prompt))
-    # # to_code = int(input(to_prompt))
     language_key = {
-        1: 'Arabic',
-        2: 'German',
-        3: 'English',
-        4: 'Spanish',
-        5: 'French',
-        6: 'Hebrew',
-        7: 'Japanese',
-        8: 'Dutch',
-        9: 'Polish',
-        10: 'Portuguese',
-        11: 'Romanian',
-        12: 'Russian',
-        13: 'Turkish',
-        0: 'All'
+        1: 'arabic',
+        2: 'german',
+        3: 'english',
+        4: 'spanish',
+        5: 'french',
+        6: 'hebrew',
+        7: 'japanese',
+        8: 'dutch',
+        9: 'polish',
+        10: 'portuguese',
+        11: 'romanian',
+        12: 'russian',
+        13: 'turkish',
+        0: 'all'
     }
     return from_lang_input, to_lang_input, language_key
 
 
 def choose_word():
-    # word = input('Type the word you want to translate:\n').lower()
     return word_input
 
 
@@ -61,12 +41,20 @@ def create_url(from_lang, to_lang, word):
 
 
 def get_url(gen_url, header):
-    return requests.get(gen_url, headers=header)
+    try:
+        url = requests.get(gen_url, headers=header)
+    except Exception:
+        print("Something wrong with your internet connection")
+        sys.exit()
+    return url
 
 
 def check_connection(url):
     if url.status_code == 200:
         print('200 OK')
+    else:
+        print(f'Sorry, unable to find {word_input}')
+        sys.exit()
 
 
 def get_content(from_lang, to_lang, user_word):
@@ -81,6 +69,9 @@ def get_content(from_lang, to_lang, user_word):
 def parse_page(page):
     soup = BeautifulSoup(page.content, 'html.parser')
     translations = soup.find_all('a', class_=lambda value: value and value.startswith("translation"))
+    if len(translations) == 0:
+        print(f'Sorry, unable to find {word_input}')
+        sys.exit()
     translation_list = [word.get_text().strip() for word in translations if word.get_text().strip() != 'Translation']
     examples = soup.select('#examples-content span.text')
     example_list = [phrase.get_text().strip() for phrase in examples]
@@ -129,12 +120,18 @@ def translate_word(from_language, to_language, word):
 
 def main():
     from_language, to_language, language_key = choose_language()
-    word = choose_word()
-    if to_language == 'all':
-        write_all_to_file(language_key, word)
+    if from_lang_input not in language_key.values():
+        print(language_key.values())
+        print(f"Sorry, the program doesn't support {from_language}")
+    elif to_lang_input not in language_key.values():
+        print(f"Sorry, the program doesn't support {to_language}")
     else:
-        translations, examples = translate_word(from_language, to_language, word)
-        print_results(translations, examples, to_language)
+        word = choose_word()
+        if to_language == 'all':
+            write_all_to_file(language_key, word)
+        else:
+            translations, examples = translate_word(from_language, to_language, word)
+            print_results(translations, examples, to_language)
 
 
 if len(args) != 4:
