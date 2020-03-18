@@ -1,30 +1,36 @@
+import sys
 import requests
 from bs4 import BeautifulSoup
 import time
 import _locale
 _locale._getdefaultlocale = (lambda *args: ['en_US', 'utf8'])
 
+args = sys.argv
+from_lang_input = args[1]
+to_lang_input = args[2]
+word_input = args[3]
+
 
 def choose_language():
-    from_prompt = ''''Hello, you're welcome to the translator. Translator supports: 
-                    1. Arabic
-                    2. German
-                    3. English
-                    4. Spanish
-                    5. French
-                    6. Hebrew
-                    7. Japanese
-                    8. Dutch
-                    9. Polish
-                    10. Portuguese
-                    11. Romanian
-                    12. Russian
-                    13. Turkish
-                    0. All languages
-                    Type the number of your language:\n'''
-    to_prompt = 'Type the number of language you want to translate to or "0" to translate to all languages:\n'
-    from_code = int(input(from_prompt))
-    to_code = int(input(to_prompt))
+    # from_prompt = ''''Hello, you're welcome to the translator. Translator supports:
+    #                 1. Arabic
+    #                 2. German
+    #                 3. English
+    #                 4. Spanish
+    #                 5. French
+    #                 6. Hebrew
+    #                 7. Japanese
+    #                 8. Dutch
+    #                 9. Polish
+    #                 10. Portuguese
+    #                 11. Romanian
+    #                 12. Russian
+    #                 13. Turkish
+    #                 0. All languages
+    #                 Type the number of your language:\n'''
+    # # to_prompt = 'Type the number of language you want to translate to or "0" to translate to all languages:\n'
+    # # from_code = int(input(from_prompt))
+    # # to_code = int(input(to_prompt))
     language_key = {
         1: 'Arabic',
         2: 'German',
@@ -41,14 +47,12 @@ def choose_language():
         13: 'Turkish',
         0: 'All'
     }
-    from_language = language_key[from_code]
-    to_language = language_key[to_code]
-    return from_language, to_language, language_key
+    return from_lang_input, to_lang_input, language_key
 
 
 def choose_word():
-    word = input('Type the word you want to translate:\n').lower()
-    return word
+    # word = input('Type the word you want to translate:\n').lower()
+    return word_input
 
 
 def create_url(from_lang, to_lang, word):
@@ -97,11 +101,11 @@ def print_results(translation_list, example_list, to_lang):
         print(f'{pair[0]}:\n{pair[1]}\n')
 
 
-def write_all_to_file(language_list, from_lang, word):
+def write_all_to_file(language_list, word):
     with open(f'{word}.txt', 'w') as f:
         for i in range(1, len(language_list)):
             to_lang = language_list[i]
-            translations, examples = translate_word(from_lang, to_lang, word)
+            translations, examples = translate_word(from_lang_input, to_lang, word)
             try:
                 f.write(f'{to_lang} Translations:\n{translations[0]}\n\n')
                 print(f'{to_lang} Translations:\n{translations[0]}\n\n')
@@ -126,11 +130,14 @@ def translate_word(from_language, to_language, word):
 def main():
     from_language, to_language, language_key = choose_language()
     word = choose_word()
-    if to_language == 'All':
-        write_all_to_file(language_key, from_language, word)
+    if to_language == 'all':
+        write_all_to_file(language_key, word)
     else:
         translations, examples = translate_word(from_language, to_language, word)
         print_results(translations, examples, to_language)
 
 
-main()
+if len(args) != 4:
+    print('The script should be called with 3 arguments: from-language, to-language and word to translate.')
+else:
+    main()
